@@ -1,0 +1,5 @@
+{
+  "name": "ScoutFlow",
+  "description": "AI-powered prospecting and outreach for agencies to find and close local business clients.",
+  "requestFramePermissions": ["geolocation"]
+}

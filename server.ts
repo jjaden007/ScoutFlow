@@ -125,30 +125,41 @@ async function startServer() {
 
   // Stripe Routes
   app.post("/api/stripe/create-checkout-session", authenticate, async (req: any, res) => {
-    const user = db.prepare("SELECT * FROM users WHERE id = ?").get(req.userId) as any;
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: {
-              name: "ScoutFlow Pro Membership",
-              description: "Full access to AI Prospector, Digital Audits, and Outreach tools.",
+    if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY === "sk_test_placeholder") {
+      return res.status(400).json({ 
+        error: "Stripe is not configured. Please set STRIPE_SECRET_KEY in environment variables." 
+      });
+    }
+
+    try {
+      const user = db.prepare("SELECT * FROM users WHERE id = ?").get(req.userId) as any;
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        line_items: [
+          {
+            price_data: {
+              currency: "usd",
+              product_data: {
+                name: "ScoutFlow Pro Membership",
+                description: "Full access to AI Prospector, Digital Audits, and Outreach tools.",
+              },
+              unit_amount: 2000,
+              recurring: { interval: "month" },
             },
-            unit_amount: 2000,
-            recurring: { interval: "month" },
+            quantity: 1,
           },
-          quantity: 1,
-        },
-      ],
-      mode: "subscription",
-      success_url: `${process.env.APP_URL || "http://localhost:3000"}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.APP_URL || "http://localhost:3000"}/pricing`,
-      customer_email: user.email,
-      metadata: { userId: user.id },
-    });
-    res.json({ url: session.url });
+        ],
+        mode: "subscription",
+        success_url: `${process.env.APP_URL || "http://localhost:3000"}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${process.env.APP_URL || "http://localhost:3000"}/pricing`,
+        customer_email: user.email,
+        metadata: { userId: user.id },
+      });
+      res.json({ url: session.url });
+    } catch (error: any) {
+      console.error("Stripe error:", error);
+      res.status(500).json({ error: error.message || "Failed to create checkout session" });
+    }
   });
 
   // Stripe Webhook (Simplified for demo, in production use stripe.webhooks.constructEvent)

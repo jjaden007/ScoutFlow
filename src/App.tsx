@@ -35,13 +35,87 @@ import {
   FileText,
   Target,
   Copy,
-  Check
+  Check,
+  RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import Markdown from 'react-markdown';
 import { cn } from './lib/utils';
 import { searchBusinesses, auditWebsite, generateOutreach, generateActionPlan, Business } from './services/geminiService';
 import { getLeads, saveLead, updateLead, deleteLead, getProfile, updateProfile, sendEmail, Lead, UserProfile, signup, login, getMe, logout, createCheckoutSession, User as UserType } from './services/api';
+
+const testimonials = [
+  {
+    name: "Sarah Jenkins",
+    role: "Founder",
+    agency: "Jenkins Digital",
+    content: "Scoutflow has completely transformed our sales workflow. We used to spend hours manually auditing local business websites before even sending a cold email. Now, we generate a professional report in 30 seconds. Our conversion rate from 'cold' to 'interested' has nearly tripled because we lead with so much value.",
+    avatar: "https://picsum.photos/seed/sarah/100/100"
+  },
+  {
+    name: "Marcus Thorne",
+    role: "CEO",
+    agency: "Thorne Media",
+    content: "The personalized outreach generation is a game-changer. It doesn't just send a generic template; it actually references the specific issues found in the audit. Business owners are shocked that we've already done the homework for them. It makes the first call so much easier when they already trust your expertise.",
+    avatar: "https://picsum.photos/seed/marcus/100/100"
+  },
+  {
+    name: "Elena Rodriguez",
+    role: "Growth Lead",
+    agency: "LocalBoost",
+    content: "Finding businesses without websites in specific high-value niches was a goldmine for us. We used the AI Prospector to scan Austin for dentists and contractors with no digital presence. We closed 3 new clients in our first week using the platform. The ROI was immediate.",
+    avatar: "https://picsum.photos/seed/elena/100/100"
+  },
+  {
+    name: "David Chen",
+    role: "Owner",
+    agency: "Chen SEO",
+    content: "The strategic action plans are what really seal the deal. Presenting a lead with a 6-month roadmap based on their actual performance gaps makes us look like a high-end consultancy rather than just another agency. It's allowed us to increase our retainer prices by 40%.",
+    avatar: "https://picsum.photos/seed/david/100/100"
+  },
+  {
+    name: "Jessica Wu",
+    role: "Founder",
+    agency: "Wu Design",
+    content: "I've tried every lead gen tool on the market, and most of them charge per lead, which really kills your margins as you scale. Scoutflow's flat monthly fee is incredibly fair. The quality of the data is better than tools that cost 5x as much.",
+    avatar: "https://picsum.photos/seed/jessica/100/100"
+  },
+  {
+    name: "Tom Baker",
+    role: "Managing Director",
+    agency: "Baker & Co",
+    content: "The AI audits are surprisingly sophisticated. They don't just check for 'best practices'; they actually analyze the visual quality and user experience. It catches things that even my junior developers sometimes miss. It's like having an extra senior strategist on the team.",
+    avatar: "https://picsum.photos/seed/tom/100/100"
+  },
+  {
+    name: "Amara Okafor",
+    role: "CEO",
+    agency: "Okafor Marketing",
+    content: "The SMTP integration is seamless. Being able to send the audits directly from the platform using my own agency email address adds that extra layer of professionalism. The tracking features help us know exactly when to follow up. It's the most cohesive tool in our stack.",
+    avatar: "https://picsum.photos/seed/amara/100/100"
+  },
+  {
+    name: "Liam O'Connor",
+    role: "Founder",
+    agency: "Dublin Digital",
+    content: "We've been able to scale our outreach by 5x without hiring any additional sales staff. Scoutflow handles the heavy lifting of research and personalization, allowing my team to focus entirely on closing the deals. It's been the key to our 200% growth this year.",
+    avatar: "https://picsum.photos/seed/liam/100/100"
+  },
+  {
+    name: "Sophia Martinez",
+    role: "Owner",
+    agency: "Martinez Creative",
+    content: "The interface is beautiful and so easy to use. I was able to onboard my entire team in less than an hour. Usually, enterprise-grade tools have a steep learning curve, but Scoutflow feels like it was designed for modern agency owners who need to move fast.",
+    avatar: "https://picsum.photos/seed/sophia/100/100"
+  },
+  {
+    name: "Ryan Smith",
+    role: "Growth Architect",
+    agency: "ScaleUp",
+    content: "Scoutflow is the missing link in our sales process. It bridges the gap between finding a raw lead and having a meaningful conversation. By leading with a detailed audit, we're not 'selling'—we're solving problems. That shift in perspective has been huge for our brand.",
+    avatar: "https://picsum.photos/seed/ryan/100/100"
+  }
+];
 
 // --- Components ---
 
@@ -168,6 +242,45 @@ const LandingPage = ({ onGetStarted }: { onGetStarted: () => void }) => (
               <h3 className="text-2xl font-bold text-slate-900 mb-4">{feature.title}</h3>
               <p className="text-slate-500 font-medium leading-relaxed">{feature.desc}</p>
             </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    {/* Testimonials Section */}
+    <section id="testimonials" className="py-32 bg-slate-50">
+      <div className="max-w-7xl mx-auto px-8">
+        <div className="text-center max-w-3xl mx-auto mb-20">
+          <h2 className="text-5xl font-bold tracking-tight text-slate-900 mb-6">Trusted by <span className="text-indigo-600">500+</span> agencies worldwide.</h2>
+          <p className="text-lg text-slate-500 font-medium">Don't just take our word for it. Here's how Scoutflow is helping agency owners scale their operations.</p>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {testimonials.map((t, i) => (
+            <motion.div 
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col h-full"
+            >
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-indigo-50">
+                  <img src={t.avatar} alt={t.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                </div>
+                <div>
+                  <div className="font-bold text-slate-900 text-sm">{t.name}</div>
+                  <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{t.role} @ {t.agency}</div>
+                </div>
+              </div>
+              <p className="text-slate-600 text-sm leading-relaxed italic flex-1">"{t.content}"</p>
+              <div className="mt-6 flex text-amber-400">
+                {[...Array(5)].map((_, i) => (
+                  <span key={i}>★</span>
+                ))}
+              </div>
+            </motion.div>
           ))}
         </div>
       </div>
@@ -378,7 +491,7 @@ const AuthPage = ({ mode, onSwitch, onSuccess }: { mode: 'login' | 'signup', onS
   );
 };
 
-const PricingPage = ({ onSubscribe }: { onSubscribe: () => void }) => (
+const PricingPage = ({ onSubscribe, onRefresh, loading, refreshing }: { onSubscribe: () => void, onRefresh: () => void, loading: boolean, refreshing: boolean }) => (
   <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
     <motion.div 
       initial={{ opacity: 0, scale: 0.95 }}
@@ -401,13 +514,27 @@ const PricingPage = ({ onSubscribe }: { onSubscribe: () => void }) => (
         </div>
       </div>
 
-      <button 
-        onClick={onSubscribe}
-        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-5 rounded-2xl transition-all shadow-xl shadow-indigo-600/20 text-lg mb-6"
-      >
-        Subscribe & Access Dashboard
-      </button>
-      <p className="text-slate-400 text-sm font-medium flex items-center justify-center gap-2">
+      <div className="space-y-4">
+        <button 
+          onClick={onSubscribe}
+          disabled={loading || refreshing}
+          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-5 rounded-2xl transition-all shadow-xl shadow-indigo-600/20 text-lg flex items-center justify-center gap-2 disabled:opacity-50"
+        >
+          {loading ? <Loader2 className="animate-spin" size={24} /> : null}
+          {loading ? 'Redirecting to Stripe...' : 'Subscribe & Access Dashboard'}
+        </button>
+
+        <button 
+          onClick={onRefresh}
+          disabled={loading || refreshing}
+          className="w-full bg-white border border-slate-200 text-slate-600 py-4 rounded-2xl font-bold hover:bg-slate-50 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+        >
+          {refreshing ? <Loader2 className="animate-spin" size={18} /> : <RefreshCw size={18} />}
+          {refreshing ? 'Checking status...' : 'Already paid? Refresh Status'}
+        </button>
+      </div>
+
+      <p className="text-slate-400 text-sm font-medium mt-8 flex items-center justify-center gap-2">
         <CheckCircle2 size={16} className="text-emerald-500" />
         Secure payment via Stripe
       </p>
@@ -532,11 +659,21 @@ export default function App() {
   const [isEditingLead, setIsEditingLead] = useState(false);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isTestingEmail, setIsTestingEmail] = useState(false);
+  const [isSubscribing, setIsSubscribing] = useState(false);
+  const [isRefreshingStatus, setIsRefreshingStatus] = useState(false);
   const [editedOutreach, setEditedOutreach] = useState('');
   const [copySuccess, setCopySuccess] = useState(false);
 
   useEffect(() => {
     checkAuth();
+    
+    // Handle redirect from Stripe
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('session_id')) {
+      // Clear the query params and check auth again
+      window.history.replaceState({}, document.title, window.location.pathname);
+      setTimeout(checkAuth, 1000); // Small delay to allow webhook to process
+    }
   }, []);
 
   const checkAuth = async () => {
@@ -575,11 +712,15 @@ export default function App() {
   };
 
   const handleSubscribe = async () => {
+    setIsSubscribing(true);
     try {
       const { url } = await createCheckoutSession();
-      window.location.href = url;
+      // Use window.open for iframe compatibility as Stripe often blocks iframe redirects
+      window.open(url, '_blank');
     } catch (err: any) {
       alert(err.message);
+    } finally {
+      setIsSubscribing(false);
     }
   };
 
@@ -807,10 +948,16 @@ export default function App() {
     }
   };
 
+  const handleRefreshStatus = async () => {
+    setIsRefreshingStatus(true);
+    await checkAuth();
+    setIsRefreshingStatus(false);
+  };
+
   if (view === 'landing') return <LandingPage onGetStarted={() => setView('signup')} />;
   if (view === 'login') return <AuthPage mode="login" onSwitch={() => setView('signup')} onSuccess={handleAuthSuccess} />;
   if (view === 'signup') return <AuthPage mode="signup" onSwitch={() => setView('login')} onSuccess={handleAuthSuccess} />;
-  if (view === 'pricing') return <PricingPage onSubscribe={handleSubscribe} />;
+  if (view === 'pricing') return <PricingPage onSubscribe={handleSubscribe} onRefresh={handleRefreshStatus} loading={isSubscribing} refreshing={isRefreshingStatus} />;
 
   if (showOnboarding) {
     return (

@@ -451,6 +451,19 @@ const AuthPage = ({ mode, onSwitch, onSuccess }: { mode: 'login' | 'signup', onS
           </div>
           <span className="text-2xl font-bold tracking-tighter">Scoutflow</span>
         </div>
+        <h1 className="text-3xl font-bold text-center mb-2 tracking-tight">
+          {mode === 'login' ? 'Welcome Back' : 'Create Account'}
+        </h1>
+        <p className="text-slate-500 text-center mb-8 font-medium">
+          {mode === 'login' ? 'Enter your credentials to access your dashboard.' : 'Join 500+ agencies scaling with Scoutflow.'}
+        </p>
+
+        {error && (
+          <div className="bg-red-50 border border-red-100 text-red-600 p-4 rounded-xl text-sm font-bold mb-6 flex items-center gap-2">
+            <AlertCircle size={18} />
+            {error}
+          </div>
+        )}
         
         <h1 className="text-3xl font-bold text-center mb-2 tracking-tight">{mode === 'login' ? 'Welcome Back' : 'Create Account'}</h1>
         <p className="text-slate-500 text-center mb-8 font-medium">
@@ -464,7 +477,7 @@ const AuthPage = ({ mode, onSwitch, onSuccess }: { mode: 'login' | 'signup', onS
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-5" noValidate>
           <div className="space-y-1.5">
             <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Email Address</label>
             <input 
@@ -481,6 +494,7 @@ const AuthPage = ({ mode, onSwitch, onSuccess }: { mode: 'login' | 'signup', onS
             <input 
               type="password" 
               required 
+              autoComplete="new-password" 
               value={password}
               onChange={e => setPassword(e.target.value)}
               className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 px-4 focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
@@ -504,7 +518,33 @@ const AuthPage = ({ mode, onSwitch, onSuccess }: { mode: 'login' | 'signup', onS
     </div>
   );
 };
+<div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t border-slate-100"></span>
+          </div>
+          <div className="relative flex justify-center text-[10px] uppercase tracking-widest">
+            <span className="bg-white px-2 text-slate-400 font-bold">Or continue with</span>
+          </div>
+        </div>
 
+        <button 
+          type="button"
+          onClick={handleGoogleLogin}
+          className="w-full bg-white border border-slate-200 text-slate-600 font-bold py-3.5 rounded-xl hover:bg-slate-50 transition-all flex items-center justify-center gap-2 shadow-sm active:scale-[0.98]"
+        >
+          <img src="https://www.google.com/favicon.ico" className="w-4 h-4" alt="Google" />
+          <span className="text-sm">Google Account</span>
+        </button>
+
+        <div className="mt-8 text-center">
+          <button onClick={onSwitch} className="text-sm font-bold text-slate-400 hover:text-indigo-600 transition-all">
+            {mode === 'login' ? "Don't have an account? Sign Up" : "Already have an account? Log In"}
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
 const PricingPage = ({ onSubscribe, onRefresh, loading, refreshing }: { onSubscribe: () => void, onRefresh: () => void, loading: boolean, refreshing: boolean }) => (
   <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
     <motion.div 

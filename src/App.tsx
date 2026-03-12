@@ -509,16 +509,15 @@ const AuthPage = ({ mode, onSwitch, onSuccess }: { mode: 'login' | 'signup', onS
           </button>
         </form>
 
-        <div className="mt-8 text-center">
-          <button onClick={onSwitch} className="text-sm font-bold text-slate-400 hover:text-indigo-600 transition-all">
-            {mode === 'login' ? "Don't have an account? Sign Up" : "Already have an account? Log In"}
+        <button 
+            disabled={loading}
+            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-2xl transition-all shadow-xl shadow-indigo-600/20 flex items-center justify-center gap-2"
+          >
+            {loading ? <Loader2 className="animate-spin" size={20} /> : mode === 'login' ? 'Log In' : 'Sign Up'}
           </button>
-        </div>
-      </motion.div>
-    </div>
-  );
-};
-<div className="relative my-6">
+        </form>
+
+        <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
             <span className="w-full border-t border-slate-100"></span>
           </div>

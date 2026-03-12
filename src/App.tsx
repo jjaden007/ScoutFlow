@@ -409,6 +409,20 @@ const AuthPage = ({ mode, onSwitch, onSuccess }: { mode: 'login' | 'signup', onS
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const handleGoogleLogin = async () => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        scopes: 'https://www.googleapis.com/auth/gmail.send',
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+        redirectTo: window.location.origin
+      }
+    });
+    if (error) setError(error.message);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

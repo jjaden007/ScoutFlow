@@ -727,18 +727,23 @@ export default function App() {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
 
-    // Listen for Supabase auth state changes.
-    // This fires immediately with the current session on page load,
-    // AND fires again after Google OAuth redirects back to the app.
-    // Without this, Google sign-in completes but the app never notices.
+    // onAuthStateChange covers two critical cases:
+    // 1. INITIAL_SESSION - fires on every page load with the existing session
+    // 2. SIGNED_IN - fires after Google OAuth redirect lands back on the app
+    // Previously we only called checkAuth() once on mount, so Google OAuth
+    // sessions were never detected and users were dropped back to the landing page.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (session) {
-          // Session exists — user is signed in (email/password or Google OAuth)
-          await checkAuth();
+        if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
+          if (session) {
+            await checkAuth(session.access_token);
+          }
+          // No session on INITIAL_SESSION = not logged in, stay on landing
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
           setView('landing');
+        } else if (event === 'TOKEN_REFRESHED' && session) {
+          await checkAuth(session.access_token);
         }
       }
     );
@@ -746,9 +751,11 @@ export default function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const checkAuth = async () => {
+  // accessToken is forwarded to your backend so it can verify Google OAuth
+  // users even when there is no traditional email/password session cookie.
+  const checkAuth = async (accessToken?: string) => {
     try {
-      const me = await getMe();
+      const me = await getMe(accessToken);
       if (me) {
         setUser(me);
         if (me.is_paid) {
@@ -758,9 +765,26 @@ export default function App() {
         } else {
           setView('pricing');
         }
+      } else {
+        // getMe returned nothing - fall back to Supabase session directly
+        // so Google OAuth users are not stranded on the landing page
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          setView('pricing');
+        }
       }
     } catch (err) {
-      console.error(err);
+      console.error('checkAuth error:', err);
+      // On any backend error, still check if Supabase has a live session
+      // so Google OAuth users are not silently dropped to the landing page
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          setView('pricing');
+        }
+      } catch {
+        // Truly no session - stay on landing
+      }
     }
   };
 
@@ -1019,7 +1043,9 @@ export default function App() {
 
   const handleRefreshStatus = async () => {
     setIsRefreshingStatus(true);
-    await checkAuth();
+    // Get the current Supabase session token and pass it to checkAuth
+    const { data: { session } } = await supabase.auth.getSession();
+    await checkAuth(session?.access_token);
     setIsRefreshingStatus(false);
   };
 

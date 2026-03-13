@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Stripe from 'stripe';
 import { getUserFromRequest } from '../_supabase';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2025-02-24.acacia' });
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2024-12-18.acacia' });
 const APP_URL = process.env.VITE_APP_URL || 'https://www.scoutflow.xyz';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

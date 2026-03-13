@@ -725,6 +725,10 @@ export default function App() {
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('session_id')) {
       window.history.replaceState({}, document.title, window.location.pathname);
+      setTimeout(async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) await checkAuth(session.access_token);
+      }, 2000);
     }
 
     // onAuthStateChange covers two critical cases:

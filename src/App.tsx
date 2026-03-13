@@ -1,3 +1,4 @@
+import { supabase } from './services/supabaseClient';
 import React, { useState, useEffect } from 'react';
 import { 
   Search, 
@@ -414,19 +415,30 @@ const AuthPage = ({ mode, onSwitch, onSuccess }: { mode: 'login' | 'signup', onS
   const [error, setError] = useState('');
 
   const handleGoogleLogin = async () => {
-    // NOTE: supabase was not imported in this file — wire up your OAuth client here.
-    // e.g. import { supabase } from './lib/supabaseClient' then uncomment below:
-    // const { error } = await supabase.auth.signInWithOAuth({
-    //   provider: 'google',
-    //   options: {
-    //     scopes: 'https://www.googleapis.com/auth/gmail.send',
-    //     queryParams: { access_type: 'offline', prompt: 'consent' },
-    //     redirectTo: window.location.origin
-    //   }
-    // });
-    // if (error) setError(error.message);
-    setError('Google login is not configured yet.');
-  };
+  try {
+    setLoading(true);
+    setError('');
+
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        // This scope allows your AI to send emails later if you want
+        scopes: 'https://www.googleapis.com/auth/gmail.send',
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        },
+        redirectTo: window.location.origin,
+      },
+    });
+
+    if (error) throw error;
+  } catch (err: any) {
+    setError(err.message || 'Google login failed');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

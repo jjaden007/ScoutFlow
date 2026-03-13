@@ -33,7 +33,7 @@ export interface User {
 
 export async function signup(email: string, password: string): Promise<{ user: User }> {
   console.log("Calling signup API...");
-  const res = await fetch("/api/auth/signup", {
+  const res = await fetch("/api/signup", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
@@ -62,7 +62,7 @@ export async function signup(email: string, password: string): Promise<{ user: U
 }
 
 export async function login(email: string, password: string): Promise<{ user: User }> {
-  const res = await fetch("/api/auth/login", {
+  const res = await fetch("/api/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
@@ -90,8 +90,8 @@ export async function login(email: string, password: string): Promise<{ user: Us
 
 export async function getMe(): Promise<User | null> {
   try {
-    console.log("Calling /api/auth/me...");
-    const res = await fetch("/api/auth/me");
+    console.log("Calling /api/me...");
+    const res = await fetch("/api/me");
     console.log("getMe response status:", res.status);
     if (!res.ok) return null;
     const contentType = res.headers.get("content-type");
@@ -106,7 +106,7 @@ export async function getMe(): Promise<User | null> {
 }
 
 export async function logout(): Promise<void> {
-  await fetch("/api/auth/logout", { method: "POST" });
+  await fetch("/api/logout", { method: "POST" });
 }
 
 export async function createCheckoutSession(): Promise<{ url: string }> {

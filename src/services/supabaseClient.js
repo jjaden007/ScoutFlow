@@ -1,8 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
-// REPLACE THESE VALUES WITH YOUR SUPABASE PROJECT DETAILS
-// You can find these in your Supabase project settings under API
-const SUPABASE_URL = "{{SUPABASE_URL}}";
-const SUPABASE_PUBLIC_KEY = "{{SUPABASE_KEY}}";
+// This tells Vite to pull the real values from your Vercel Environment Variables
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLIC_KEY);
+export const supabase = createClient(supabaseUrl, supabaseKey);

@@ -721,15 +721,29 @@ export default function App() {
   const [copySuccess, setCopySuccess] = useState(false);
 
   useEffect(() => {
-    checkAuth();
-    
-    // Handle redirect from Stripe
+    // Handle redirect back from Stripe
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('session_id')) {
-      // Clear the query params and check auth again
       window.history.replaceState({}, document.title, window.location.pathname);
-      setTimeout(checkAuth, 1000); // Small delay to allow webhook to process
     }
+
+    // Listen for Supabase auth state changes.
+    // This fires immediately with the current session on page load,
+    // AND fires again after Google OAuth redirects back to the app.
+    // Without this, Google sign-in completes but the app never notices.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (session) {
+          // Session exists — user is signed in (email/password or Google OAuth)
+          await checkAuth();
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+          setView('landing');
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const checkAuth = async () => {

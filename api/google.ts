@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { google } from 'googleapis';
-import { getUserFromRequest, supabaseAdmin } from '../lib/supabase-admin';
+import { getUserFromRequest, supabaseAdmin } from './_supabase';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const segments = (req.url || '').split('?')[0].split('/').filter(Boolean);

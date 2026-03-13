@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import Stripe from 'stripe';
-import { getUserFromRequest } from '../../lib/supabase-admin';
+import { getUserFromRequest } from '../_supabase';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-02-25.clover' });
 const APP_URL = process.env.VITE_APP_URL || 'https://www.scoutflow.xyz';

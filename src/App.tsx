@@ -516,7 +516,6 @@ const AuthPage = ({ mode, onSwitch, onSuccess }: { mode: 'login' | 'signup', onS
             {loading ? <Loader2 className="animate-spin" size={20} /> : mode === 'login' ? 'Log In' : 'Sign Up'}
           </button>
         </form>
-
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
             <span className="w-full border-t border-slate-100"></span>
@@ -526,14 +525,18 @@ const AuthPage = ({ mode, onSwitch, onSuccess }: { mode: 'login' | 'signup', onS
           </div>
         </div>
 
-        <button 
-          type="button"
-          onClick={handleGoogleLogin}
-          className="w-full bg-white border border-slate-200 text-slate-600 font-bold py-3.5 rounded-xl hover:bg-slate-50 transition-all flex items-center justify-center gap-2 shadow-sm active:scale-[0.98]"
-        >
-          <img src="https://www.google.com/favicon.ico" className="w-4 h-4" alt="Google" />
-          <span className="text-sm">Google Account</span>
-        </button>
+        <button
+  type="button"
+  onClick={handleGoogleLogin}
+  className="w-full bg-white border border-slate-200 text-slate-600 font-bold py-3.5 rounded-xl hover:bg-slate-50 transition-all flex items-center justify-center gap-2 shadow-sm active:scale-[0.98]"
+>
+  <img
+    src="https://www.google.com/favicon.ico"
+    className="w-4 h-4"
+    alt="Google"
+  />
+  <span className="text-sm">Google Account</span>
+</button>
 
         <div className="mt-8 text-center">
           <button onClick={onSwitch} className="text-sm font-bold text-slate-400 hover:text-indigo-600 transition-all">

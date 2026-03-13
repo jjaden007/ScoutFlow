@@ -16,6 +16,15 @@ export interface UserProfile {
   business_website: string;
 }
 
+export interface SmtpSettings {
+  host: string;
+  port: number;
+  user: string;
+  pass: string;
+  from_email: string;
+  secure: boolean;
+}
+
 export interface User {
   id: string;
   email: string;
@@ -23,16 +32,33 @@ export interface User {
 }
 
 export async function signup(email: string, password: string): Promise<{ user: User }> {
+  console.log("Calling signup API...");
   const res = await fetch("/api/auth/signup", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
   });
+  
+  console.log("Signup response status:", res.status);
+  const contentType = res.headers.get("content-type");
+  console.log("Signup response content-type:", contentType);
   if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error || "Signup failed");
+    if (contentType && contentType.includes("application/json")) {
+      const err = await res.json();
+      throw new Error(err.error || "Signup failed");
+    } else {
+      const text = await res.text();
+      console.error("Signup failed with non-JSON response:", text);
+      throw new Error(`Signup failed (${res.status}): ${text.substring(0, 100)}...`);
+    }
   }
-  return res.json();
+  
+  if (contentType && contentType.includes("application/json")) {
+    return res.json();
+  } else {
+    const text = await res.text();
+    throw new Error("Expected JSON response but got: " + text.substring(0, 100));
+  }
 }
 
 export async function login(email: string, password: string): Promise<{ user: User }> {
@@ -41,16 +67,42 @@ export async function login(email: string, password: string): Promise<{ user: Us
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),
   });
+
+  const contentType = res.headers.get("content-type");
   if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error || "Login failed");
+    if (contentType && contentType.includes("application/json")) {
+      const err = await res.json();
+      throw new Error(err.error || "Login failed");
+    } else {
+      const text = await res.text();
+      console.error("Login failed with non-JSON response:", text);
+      throw new Error(`Login failed (${res.status}): ${text.substring(0, 100)}...`);
+    }
   }
-  return res.json();
+
+  if (contentType && contentType.includes("application/json")) {
+    return res.json();
+  } else {
+    const text = await res.text();
+    throw new Error("Expected JSON response but got: " + text.substring(0, 100));
+  }
 }
 
 export async function getMe(): Promise<User | null> {
-  const res = await fetch("/api/auth/me");
-  return res.json();
+  try {
+    console.log("Calling /api/auth/me...");
+    const res = await fetch("/api/auth/me");
+    console.log("getMe response status:", res.status);
+    if (!res.ok) return null;
+    const contentType = res.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
+      return res.json();
+    }
+    return null;
+  } catch (err) {
+    console.error("getMe error:", err);
+    return null;
+  }
 }
 
 export async function logout(): Promise<void> {
@@ -77,6 +129,46 @@ export async function updateProfile(profile: UserProfile): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(profile),
   });
+}
+
+export async function getSmtpSettings(): Promise<SmtpSettings | null> {
+  const res = await fetch("/api/smtp-settings");
+  return res.json();
+}
+
+export async function updateSmtpSettings(settings: SmtpSettings): Promise<void> {
+  await fetch("/api/smtp-settings", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(settings),
+  });
+}
+
+export async function getGoogleStatus(): Promise<{ connected: boolean, email?: string }> {
+  const res = await fetch("/api/auth/google/status");
+  return res.json();
+}
+
+export async function getGoogleAuthUrl(): Promise<{ url: string }> {
+  const res = await fetch("/api/auth/google/url");
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || "Failed to get Google auth URL");
+  }
+  return res.json();
+}
+
+export async function getGoogleLoginUrl(): Promise<{ url: string }> {
+  const res = await fetch("/api/auth/google/login-url");
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || "Failed to get Google login URL");
+  }
+  return res.json();
+}
+
+export async function disconnectGoogle(): Promise<void> {
+  await fetch("/api/auth/google/disconnect", { method: "POST" });
 }
 
 export async function getLeads(): Promise<Lead[]> {

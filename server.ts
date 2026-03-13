@@ -51,6 +51,7 @@ const googleOAuth2Client = new google.auth.OAuth2(
 );
 
 const db = new Database("leads.db");
+console.log("Database connected successfully");
 
 // Initialize database
 db.exec(`
@@ -118,6 +119,10 @@ async function startServer() {
   app.use(express.json());
   app.use(cookieParser());
 
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok" });
+  });
+
   // Auth Middleware
   const authenticate = (req: any, res: any, next: any) => {
     const token = req.cookies.token;
@@ -133,6 +138,7 @@ async function startServer() {
 
   // Auth Routes
   app.post("/api/auth/signup", async (req, res) => {
+    console.log("Signup request received:", req.body.email);
     const { email, password } = req.body;
     const id = Math.random().toString(36).substring(2, 15);
     try {
@@ -152,6 +158,7 @@ async function startServer() {
   });
 
   app.post("/api/auth/login", async (req, res) => {
+    console.log("Login request received:", req.body.email);
     const { email, password } = req.body;
     try {
       const user = db.prepare("SELECT * FROM users WHERE email = ?").get(email) as any;
@@ -309,7 +316,8 @@ async function startServer() {
         let user = db.prepare("SELECT * FROM users WHERE email = ?").get(data.email) as any;
         if (!user) {
           const id = Math.random().toString(36).substring(2, 15);
-          const passwordHash = await bcrypt.hash(Math.random().toString(36), 10);
+          const salt = bcrypt.genSaltSync(10);
+          const passwordHash = bcrypt.hashSync(Math.random().toString(36), salt);
           db.prepare("INSERT INTO users (id, email, password_hash, google_email) VALUES (?, ?, ?, ?)").run(id, data.email, passwordHash, data.email);
           user = { id, email: data.email, is_paid: 0 };
         }
@@ -573,6 +581,12 @@ async function startServer() {
       console.error("Email error:", error);
       res.status(500).json({ error: error.message });
     }
+  });
+
+  // Error handling middleware
+  app.use((err: any, req: any, res: any, next: any) => {
+    console.error("Unhandled error:", err);
+    res.status(500).json({ error: "Internal server error", details: err.message });
   });
 
   // Vite middleware for development

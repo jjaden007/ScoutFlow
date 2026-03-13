@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import crypto from 'crypto';
-import { getUserFromRequest, supabaseAdmin } from './supabase-admin';
+import { getUserFromRequest, supabaseAdmin } from '../lib/supabase-admin';
 
 const ENCRYPTION_KEY = (process.env.ENCRYPTION_KEY || 'scoutflow-encryption-key-32-char').padEnd(32).substring(0, 32);
 const IV_LENGTH = 16;

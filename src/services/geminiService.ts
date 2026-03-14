@@ -1,20 +1,10 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { UserProfile } from "./api";
+import { Business, UserProfile } from "../types";
 
 const apiKey = process.env.GEMINI_API_KEY;
 const ai = new GoogleGenAI({ apiKey: apiKey! });
 
-export interface Business {
-  id: string;
-  name: string;
-  website?: string;
-  email?: string;
-  phone?: string;
-  rating?: number;
-  address?: string;
-  category: string;
-  location: string;
-}
+export type { Business };
 
 export async function searchBusinesses(category: string, location: string): Promise<Business[]> {
   const prompt = `Find 10 real local businesses in the category "${category}" located in "${location}". 

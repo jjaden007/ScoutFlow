@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   Search, TrendingUp, Mail, BarChart3, ArrowRight, Sparkles, Check, X
 } from 'lucide-react';
@@ -244,9 +244,9 @@ export default function LandingPage() {
             <span className="text-xl font-bold tracking-tighter">Scoutflow</span>
           </div>
           <div className="flex gap-8 text-sm font-bold text-slate-400 uppercase tracking-widest">
-            <a href="#" className="hover:text-slate-900">Privacy</a>
-            <a href="#" className="hover:text-slate-900">Terms</a>
-            <a href="#" className="hover:text-slate-900">Contact</a>
+            <Link to="/privacy" className="hover:text-slate-900">Privacy</Link>
+            <Link to="/terms" className="hover:text-slate-900">Terms</Link>
+            <a href="mailto:hello@scoutflow.xyz" className="hover:text-slate-900">Contact</a>
           </div>
           <div className="text-slate-400 text-sm font-medium">© 2026 Scoutflow. All rights reserved.</div>
         </div>

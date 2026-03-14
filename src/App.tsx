@@ -4,6 +4,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import LandingPage from './pages/LandingPage';
 import AuthPage from './pages/AuthPage';
 import PricingPage from './pages/PricingPage';
+import PrivacyPage from './pages/PrivacyPage';
+import TermsPage from './pages/TermsPage';
 import DashboardLayout from './pages/dashboard/DashboardLayout';
 import OverviewTab from './pages/dashboard/OverviewTab';
 import ProspectorTab from './pages/dashboard/ProspectorTab';
@@ -40,6 +42,9 @@ export default function App() {
           <Route path="prospector" element={<ProspectorTab />} />
           <Route path="settings" element={<ProfileTab />} />
         </Route>
+
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/terms" element={<TermsPage />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

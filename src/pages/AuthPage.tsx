@@ -1,18 +1,15 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { AlertCircle, Loader2, Sparkles } from 'lucide-react';
 import { supabase } from '../services/supabaseClient';
-import { login, signup } from '../services/api';
-import { useAuth } from '../context/AuthContext';
+import { signup } from '../services/api';
 
 interface AuthPageProps {
   mode: 'login' | 'signup';
 }
 
 export default function AuthPage({ mode }: AuthPageProps) {
-  const navigate = useNavigate();
-  const { setUser } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -33,7 +30,6 @@ export default function AuthPage({ mode }: AuthPageProps) {
       if (error) throw error;
     } catch (err: any) {
       setError(err.message || 'Google login failed');
-    } finally {
       setLoading(false);
     }
   };
@@ -43,12 +39,19 @@ export default function AuthPage({ mode }: AuthPageProps) {
     setLoading(true);
     setError('');
     try {
-      const { user } = mode === 'login' ? await login(email, password) : await signup(email, password);
-      setUser(user);
-      navigate(user.is_paid ? '/dashboard' : '/pricing');
+      if (mode === 'signup') {
+        // Create the user record in our DB first
+        await signup(email, password);
+      }
+
+      // Sign in via Supabase client — this sets the session in localStorage
+      // and triggers the SIGNED_IN event in AuthContext, which handles navigation
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+
+      // AuthContext's SIGNED_IN handler now takes over and navigates
     } catch (err: any) {
-      setError(err.message);
-    } finally {
+      setError(err.message || 'Authentication failed');
       setLoading(false);
     }
   };
@@ -120,7 +123,8 @@ export default function AuthPage({ mode }: AuthPageProps) {
         <button
           type="button"
           onClick={handleGoogleLogin}
-          className="w-full bg-white border border-slate-200 text-slate-600 font-bold py-3.5 rounded-xl hover:bg-slate-50 transition-all flex items-center justify-center gap-2 shadow-sm active:scale-[0.98]"
+          disabled={loading}
+          className="w-full bg-white border border-slate-200 text-slate-600 font-bold py-3.5 rounded-xl hover:bg-slate-50 transition-all flex items-center justify-center gap-2 shadow-sm active:scale-[0.98] disabled:opacity-50"
         >
           <img src="https://www.google.com/favicon.ico" className="w-4 h-4" alt="Google" />
           <span className="text-sm">Google Account</span>

@@ -51,7 +51,8 @@ export async function login(email: string, password: string): Promise<{ user: Us
 }
 
 export async function logout(): Promise<void> {
-  await fetch('/api/logout', { method: 'POST' });
+  const { supabase } = await import('./supabaseClient');
+  await supabase.auth.signOut();
 }
 
 export async function createCheckoutSession(): Promise<{ url: string }> {
@@ -120,51 +121,34 @@ export async function deleteLead(id: string): Promise<void> {
   });
 }
 
-export async function searchBusinesses(category: string, location: string): Promise<Business[]> {
+async function aiRequest(type: string, payload: Record<string, unknown>) {
   const token = await getToken();
-  const res = await fetch('/api/search-businesses', {
+  const res = await fetch('/api/ai', {
     method: 'POST',
     headers: authHeaders(token),
-    body: JSON.stringify({ category, location }),
+    body: JSON.stringify({ type, ...payload }),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Search failed');
+  if (!res.ok) throw new Error(data.error || 'AI request failed');
   return data;
 }
 
+export async function searchBusinesses(category: string, location: string): Promise<Business[]> {
+  return aiRequest('search', { category, location });
+}
+
 export async function auditLead(business: Business): Promise<string> {
-  const token = await getToken();
-  const res = await fetch('/api/audit-lead', {
-    method: 'POST',
-    headers: authHeaders(token),
-    body: JSON.stringify({ business }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Audit failed');
+  const data = await aiRequest('audit', { business });
   return data.report;
 }
 
 export async function generateOutreach(business: Business, auditReport: string, userProfile?: UserProfile): Promise<string> {
-  const token = await getToken();
-  const res = await fetch('/api/generate-outreach', {
-    method: 'POST',
-    headers: authHeaders(token),
-    body: JSON.stringify({ business, auditReport, userProfile }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Outreach generation failed');
+  const data = await aiRequest('outreach', { business, auditReport, userProfile });
   return data.outreach;
 }
 
 export async function generateActionPlan(business: Business, auditReport: string, userProfile?: UserProfile): Promise<string> {
-  const token = await getToken();
-  const res = await fetch('/api/action-plan', {
-    method: 'POST',
-    headers: authHeaders(token),
-    body: JSON.stringify({ business, auditReport, userProfile }),
-  });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Action plan generation failed');
+  const data = await aiRequest('action-plan', { business, auditReport, userProfile });
   return data.plan;
 }
 

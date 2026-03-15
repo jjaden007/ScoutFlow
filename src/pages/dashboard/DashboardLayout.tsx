@@ -4,11 +4,8 @@ import { motion, AnimatePresence } from 'motion/react';
 import { LayoutDashboard, Users, Search, Settings, Sparkles, X } from 'lucide-react';
 import SidebarItem from '../../components/ui/SidebarItem';
 import { useAuth } from '../../context/AuthContext';
-import { getLeads, saveLead, updateLead, deleteLead, getProfile, updateProfile, sendEmail } from '../../services/api';
-import { auditWebsite, generateOutreach, generateActionPlan } from '../../services/geminiService';
-import { logout } from '../../services/api';
-import type { Lead, UserProfile } from '../../types';
-import type { Business } from '../../services/geminiService';
+import { getLeads, saveLead, updateLead, deleteLead, getProfile, updateProfile, sendEmail, logout, auditLead, generateOutreach, generateActionPlan } from '../../services/api';
+import type { Lead, UserProfile, Business } from '../../types';
 
 export interface DashboardOutletContext {
   leads: Lead[];
@@ -102,7 +99,7 @@ export default function DashboardLayout() {
   const handleAudit = async (lead: Lead) => {
     setIsAuditing(true);
     try {
-      const report = await auditWebsite(lead);
+      const report = await auditLead(lead);
       const outreach = await generateOutreach(lead, report, profile || undefined);
       await updateLead(lead.id, { audit_report: report, outreach_message: outreach });
       fetchLeads();

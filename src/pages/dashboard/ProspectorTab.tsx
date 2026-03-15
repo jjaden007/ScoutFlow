@@ -5,8 +5,8 @@ import {
   Search, MapPin, Briefcase, Loader2, ChevronRight,
   Globe, Clock, CheckCircle2, TrendingUp,
 } from 'lucide-react';
-import { searchBusinesses } from '../../services/geminiService';
-import type { Business } from '../../services/geminiService';
+import { searchBusinesses } from '../../services/api';
+import type { Business } from '../../types';
 import type { DashboardOutletContext } from './DashboardLayout';
 
 export default function ProspectorTab() {

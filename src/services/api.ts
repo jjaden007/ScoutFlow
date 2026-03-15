@@ -120,6 +120,54 @@ export async function deleteLead(id: string): Promise<void> {
   });
 }
 
+export async function searchBusinesses(category: string, location: string): Promise<Business[]> {
+  const token = await getToken();
+  const res = await fetch('/api/search-businesses', {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ category, location }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Search failed');
+  return data;
+}
+
+export async function auditLead(business: Business): Promise<string> {
+  const token = await getToken();
+  const res = await fetch('/api/audit-lead', {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ business }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Audit failed');
+  return data.report;
+}
+
+export async function generateOutreach(business: Business, auditReport: string, userProfile?: UserProfile): Promise<string> {
+  const token = await getToken();
+  const res = await fetch('/api/generate-outreach', {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ business, auditReport, userProfile }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Outreach generation failed');
+  return data.outreach;
+}
+
+export async function generateActionPlan(business: Business, auditReport: string, userProfile?: UserProfile): Promise<string> {
+  const token = await getToken();
+  const res = await fetch('/api/action-plan', {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ business, auditReport, userProfile }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Action plan generation failed');
+  return data.plan;
+}
+
 export async function sendEmail(to: string, subject: string, body: string): Promise<void> {
   const token = await getToken();
   const res = await fetch('/api/send-email', {

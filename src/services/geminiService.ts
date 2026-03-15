@@ -12,7 +12,7 @@ export async function searchBusinesses(category: string, location: string): Prom
   Use Google Search to find accurate contact information. Format the output as a JSON array of objects.`;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-2.0-flash",
     contents: prompt,
     config: {
       tools: [{ googleSearch: {} }],
@@ -58,7 +58,7 @@ export async function auditWebsite(business: Business): Promise<string> {
        Provide a concise report in Markdown format.`;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-2.0-flash",
     contents: prompt,
     config: {
       tools: [{ googleSearch: {} }],
@@ -87,7 +87,7 @@ export async function generateOutreach(business: Business, auditReport: string, 
   Do not use placeholders like [Your Name], just write the message body.`;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-2.0-flash",
     contents: prompt,
   });
 
@@ -108,7 +108,7 @@ export async function generateActionPlan(business: Business, auditReport: string
   Format the output in clean Markdown with clear headings and bullet points.`;
 
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-2.0-flash",
     contents: prompt,
   });
 

@@ -1,8 +1,11 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Business, UserProfile } from "../types";
 
-const apiKey = process.env.GEMINI_API_KEY;
-const ai = new GoogleGenAI({ apiKey: apiKey! });
+function getAI() {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('GEMINI_API_KEY environment variable is not set');
+  return new GoogleGenAI({ apiKey });
+}
 
 export type { Business };
 
@@ -11,7 +14,7 @@ export async function searchBusinesses(category: string, location: string): Prom
   Provide their name, website (if any), contact email address (if available), phone number, rating, and address.
   Use Google Search to find accurate contact information. Format the output as a JSON array of objects.`;
 
-  const response = await ai.models.generateContent({
+  const response = await getAI().models.generateContent({
     model: "gemini-2.0-flash",
     contents: prompt,
     config: {
@@ -57,7 +60,7 @@ export async function auditWebsite(business: Business): Promise<string> {
     : `The business "${business.name}" has NO website. Explain why this is a major disadvantage for a ${business.category} in ${business.location} and what they are missing out on. 
        Provide a concise report in Markdown format.`;
 
-  const response = await ai.models.generateContent({
+  const response = await getAI().models.generateContent({
     model: "gemini-2.0-flash",
     contents: prompt,
     config: {
@@ -86,7 +89,7 @@ export async function generateOutreach(business: Business, auditReport: string, 
   Keep it short, empathetic, and focused on helping them get more customers.
   Do not use placeholders like [Your Name], just write the message body.`;
 
-  const response = await ai.models.generateContent({
+  const response = await getAI().models.generateContent({
     model: "gemini-2.0-flash",
     contents: prompt,
   });
@@ -107,7 +110,7 @@ export async function generateActionPlan(business: Business, auditReport: string
   
   Format the output in clean Markdown with clear headings and bullet points.`;
 
-  const response = await ai.models.generateContent({
+  const response = await getAI().models.generateContent({
     model: "gemini-2.0-flash",
     contents: prompt,
   });

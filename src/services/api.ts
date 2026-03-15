@@ -128,7 +128,9 @@ async function aiRequest(type: string, payload: Record<string, unknown>) {
     headers: authHeaders(token),
     body: JSON.stringify({ type, ...payload }),
   });
-  const data = await res.json();
+  const text = await res.text();
+  let data: any;
+  try { data = JSON.parse(text); } catch { throw new Error(`AI request failed: ${text.slice(0, 200)}`); }
   if (!res.ok) throw new Error(data.error || 'AI request failed');
   return data;
 }

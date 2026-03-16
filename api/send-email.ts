@@ -32,16 +32,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   if (userData?.google_access_token && userData?.google_refresh_token) {
     try {
-      const auth = new google.auth.OAuth2(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);
-      auth.setCredentials({ access_token: userData.google_access_token, refresh_token: userData.google_refresh_token, expiry_date: userData.google_token_expiry });
+      const auth = new google.auth.OAuth2(
+        process.env.GOOGLE_CLIENT_ID,
+        process.env.GOOGLE_CLIENT_SECRET,
+        `${process.env.VITE_APP_URL || 'https://www.scoutflow.xyz'}/api/google`
+      );
+      auth.setCredentials({
+        access_token: userData.google_access_token,
+        refresh_token: userData.google_refresh_token,
+        expiry_date: userData.google_token_expiry,
+      });
       const gmail = google.gmail({ version: 'v1', auth });
       const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
       const message = [`To: ${to}`, 'Content-Type: text/plain; charset=utf-8', 'MIME-Version: 1.0', `Subject: ${utf8Subject}`, '', body].join('\n');
       const encodedMessage = Buffer.from(message).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
       await gmail.users.messages.send({ userId: 'me', requestBody: { raw: encodedMessage } });
       return res.json({ success: true, provider: 'gmail' });
-    } catch (err) {
-      console.error('Gmail error:', err);
+    } catch (err: any) {
+      const msg = err?.response?.data?.error?.message || err?.message || 'Gmail send failed';
+      console.error('Gmail error:', msg);
+      return res.status(500).json({ error: `Gmail error: ${msg}` });
     }
   }
 

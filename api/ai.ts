@@ -45,29 +45,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const { category, location } = body as any;
       if (!category || !location) return res.status(400).json({ error: 'category and location required' });
 
-      const prompt = `Find 10 real local businesses in the category "${category}" located in "${location}". Return a JSON array where each object has: name (string), website (string or null), email (string or null), phone (string or null), rating (number or null), address (string or null). Only return the JSON array, no other text.`;
+      // Use Google Search grounding so websites are real — JSON schema is mutually exclusive with googleSearch
+      const prompt = `Search Google and find 10 real, currently operating local businesses in the category "${category}" located in "${location}".
+For each business find their actual website URL by searching. Only include websites you found via search — set to null if not found.
+Return ONLY a valid JSON array (no markdown, no extra text) where each object has exactly these fields:
+name (string), website (string or null — must be a real verified URL), email (string or null), phone (string or null), rating (number or null), address (string or null).`;
 
-      const text = await gemini(prompt, {
-        json: true,
-        schema: {
-          type: 'ARRAY',
-          items: {
-            type: 'OBJECT',
-            properties: {
-              name: { type: 'STRING' },
-              website: { type: 'STRING' },
-              email: { type: 'STRING' },
-              phone: { type: 'STRING' },
-              rating: { type: 'NUMBER' },
-              address: { type: 'STRING' },
-            },
-            required: ['name'],
-          },
-        },
-      });
+      const text = await gemini(prompt);
 
       let businesses = [];
-      try { businesses = JSON.parse(text); } catch { businesses = []; }
+      try {
+        // Strip markdown code fences if present
+        const clean = text.replace(/```json\s*/gi, '').replace(/```\s*/g, '').trim();
+        businesses = JSON.parse(clean);
+      } catch { businesses = []; }
       const result = businesses.map((b: any, i: number) => ({
         ...b,
         id: `${String(b.name).replace(/\s+/g, '-').toLowerCase()}-${i}`,

@@ -1,10 +1,52 @@
+import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { useOutletContext } from 'react-router-dom';
-import { Loader2, Mail } from 'lucide-react';
+import { Loader2, Mail, CheckCircle, XCircle } from 'lucide-react';
 import type { DashboardOutletContext } from './DashboardLayout';
+import { getGoogleStatus, getGoogleAuthUrl, disconnectGoogle } from '../../services/api';
 
 export default function ProfileTab() {
   const { profile, handleSaveProfile, handleTestEmail, isTestingEmail } = useOutletContext<DashboardOutletContext>();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const [gmailConnected, setGmailConnected] = useState(false);
+  const [gmailEmail, setGmailEmail] = useState<string | null>(null);
+  const [gmailLoading, setGmailLoading] = useState(true);
+  const [gmailMsg, setGmailMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    getGoogleStatus().then(({ connected, email }) => {
+      setGmailConnected(connected);
+      setGmailEmail(email);
+      setGmailLoading(false);
+    });
+
+    const status = searchParams.get('google');
+    if (status === 'connected') {
+      setGmailMsg('Gmail connected successfully!');
+      setSearchParams({});
+    } else if (status === 'error') {
+      setGmailMsg('Failed to connect Gmail. Please try again.');
+      setSearchParams({});
+    }
+  }, []);
+
+  const handleConnectGmail = async () => {
+    try {
+      const url = await getGoogleAuthUrl();
+      window.location.href = url;
+    } catch (err: any) {
+      setGmailMsg(err.message || 'Failed to start Gmail connection.');
+    }
+  };
+
+  const handleDisconnectGmail = async () => {
+    await disconnectGoogle();
+    setGmailConnected(false);
+    setGmailEmail(null);
+    setGmailMsg('Gmail disconnected.');
+  };
 
   return (
     <motion.div
@@ -19,6 +61,51 @@ export default function ProfileTab() {
         <p className="text-slate-500 font-medium">Manage your personal and business details for better AI tailoring.</p>
       </header>
 
+      {/* Gmail Connection */}
+      <div className="bg-white border border-slate-200 rounded-[2rem] p-8 shadow-sm mb-6">
+        <h2 className="text-sm font-bold text-slate-900 uppercase tracking-widest mb-6">Email Provider</h2>
+
+        {gmailMsg && (
+          <p className={`text-sm font-medium mb-4 ${gmailMsg.includes('success') ? 'text-green-600' : 'text-red-500'}`}>
+            {gmailMsg}
+          </p>
+        )}
+
+        {gmailLoading ? (
+          <div className="flex items-center gap-2 text-slate-400"><Loader2 className="animate-spin" size={16} /> Checking connection…</div>
+        ) : gmailConnected ? (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <CheckCircle size={20} className="text-green-500" />
+              <div>
+                <p className="text-sm font-semibold text-slate-800">Gmail connected</p>
+                <p className="text-xs text-slate-400">{gmailEmail}</p>
+              </div>
+            </div>
+            <button
+              onClick={handleDisconnectGmail}
+              className="text-sm text-red-500 hover:text-red-600 font-semibold flex items-center gap-1"
+            >
+              <XCircle size={15} /> Disconnect
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-slate-800">No email provider connected</p>
+              <p className="text-xs text-slate-400">Connect Gmail to send outreach emails directly from ScoutFlow.</p>
+            </div>
+            <button
+              onClick={handleConnectGmail}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-2.5 rounded-xl text-sm transition-all"
+            >
+              Connect Gmail
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Profile form */}
       <div className="bg-white border border-slate-200 rounded-[2rem] p-10 shadow-sm">
         <form onSubmit={handleSaveProfile} className="space-y-10">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12">

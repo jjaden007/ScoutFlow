@@ -156,14 +156,14 @@ export async function generateActionPlan(business: Business, auditReport: string
 
 export async function getGoogleStatus(): Promise<{ connected: boolean; email: string | null }> {
   const token = await getToken();
-  const res = await fetch('/api/google/status', { headers: authHeaders(token) });
+  const res = await fetch('/api/google?action=status', { headers: authHeaders(token) });
   const data = await res.json();
   return data;
 }
 
 export async function getGoogleAuthUrl(): Promise<string> {
   const token = await getToken();
-  const res = await fetch('/api/google/url', { headers: authHeaders(token) });
+  const res = await fetch('/api/google?action=url', { headers: authHeaders(token) });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Failed to get auth URL');
   return data.url;
@@ -171,7 +171,7 @@ export async function getGoogleAuthUrl(): Promise<string> {
 
 export async function disconnectGoogle(): Promise<void> {
   const token = await getToken();
-  await fetch('/api/google/disconnect', { method: 'POST', headers: authHeaders(token) });
+  await fetch('/api/google?action=disconnect', { method: 'POST', headers: authHeaders(token) });
 }
 
 export async function sendEmail(to: string, subject: string, body: string): Promise<void> {

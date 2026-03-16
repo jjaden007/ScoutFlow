@@ -15,12 +15,10 @@ function makeOAuth2Client() {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // OAuth callback from Google (has ?code=...&state=...)
+  // OAuth callback from Google — has ?code=...&state=...
   if (req.query.code && req.query.state) {
     const code = req.query.code as string;
     const state = req.query.state as string;
-
-    // state format: "connect:<userId>"
     const userId = state.startsWith('connect:') ? state.slice(8) : null;
     if (!userId) return res.status(400).send('Invalid state');
 
@@ -29,7 +27,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const { tokens } = await oauth2Client.getToken(code);
       oauth2Client.setCredentials(tokens);
 
-      // Get the user's Google email
       const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
       const { data: googleUser } = await oauth2.userinfo.get();
 
@@ -47,21 +44,20 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
 
-  // All other routes require auth
+  // All other actions require auth
   const token = req.headers['authorization']?.replace('Bearer ', '');
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
   const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
   if (authError || !user) return res.status(401).json({ error: 'Unauthorized' });
 
-  const segments = (req.url || '').split('?')[0].split('/').filter(Boolean);
-  const route = segments[segments.length - 1];
+  const action = req.query.action as string;
 
-  if (route === 'status' && req.method === 'GET') {
+  if (action === 'status' && req.method === 'GET') {
     const { data } = await supabaseAdmin.from('users').select('google_email').eq('id', user.id).single();
     return res.json({ connected: !!data?.google_email, email: data?.google_email || null });
   }
 
-  if (route === 'url' && req.method === 'GET') {
+  if (action === 'url' && req.method === 'GET') {
     if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET)
       return res.status(400).json({ error: 'Google OAuth not configured' });
     const url = makeOAuth2Client().generateAuthUrl({
@@ -73,7 +69,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.json({ url });
   }
 
-  if (route === 'disconnect' && req.method === 'POST') {
+  if (action === 'disconnect' && req.method === 'POST') {
     await supabaseAdmin.from('users').update({
       google_access_token: null,
       google_refresh_token: null,
@@ -83,5 +79,5 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.json({ success: true });
   }
 
-  return res.status(404).json({ error: 'Route not found' });
+  return res.status(404).json({ error: 'Unknown action' });
 }

@@ -135,8 +135,8 @@ async function aiRequest(type: string, payload: Record<string, unknown>) {
   return data;
 }
 
-export async function searchBusinesses(category: string, location: string): Promise<Business[]> {
-  return aiRequest('search', { category, location });
+export async function searchBusinesses(category: string, location: string, page = 1): Promise<Business[]> {
+  return aiRequest('search', { category, location, page });
 }
 
 export async function auditLead(business: Business): Promise<string> {

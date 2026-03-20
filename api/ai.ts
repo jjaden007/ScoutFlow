@@ -42,11 +42,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     if (type === 'search') {
-      const { category, location } = body as any;
+      const { category, location, page = 1 } = body as any;
       if (!category || !location) return res.status(400).json({ error: 'category and location required' });
 
+      const offset = (page - 1) * 10 + 1;
+      const pageNote = page > 1 ? ` This is page ${page} — return businesses #${offset} to #${offset + 9}, different from any previously returned results.` : '';
+
       // Use Google Search grounding so websites are real — JSON schema is mutually exclusive with googleSearch
-      const prompt = `Search Google and find 10 real, currently operating local businesses in the category "${category}" located in "${location}".
+      const prompt = `Search Google and find 10 real, currently operating local businesses in the category "${category}" located in "${location}".${pageNote}
 For each business find their actual website URL by searching. Only include websites you found via search — set to null if not found.
 Return ONLY a valid JSON array (no markdown, no extra text) where each object has exactly these fields:
 name (string), website (string or null — must be a real verified URL), email (string or null), phone (string or null), rating (number or null), address (string or null).`;
@@ -61,7 +64,7 @@ name (string), website (string or null — must be a real verified URL), email (
       } catch { businesses = []; }
       const result = businesses.map((b: any, i: number) => ({
         ...b,
-        id: `${String(b.name).replace(/\s+/g, '-').toLowerCase()}-${i}`,
+        id: `${String(b.name).replace(/\s+/g, '-').toLowerCase()}-p${page}-${i}`,
         category,
         location,
       }));

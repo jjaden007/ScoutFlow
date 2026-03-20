@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useOutletContext } from 'react-router-dom';
 import {
@@ -23,6 +24,38 @@ export default function LeadsTab() {
     updateStatus, handleActionPlan, handleRegenerateOutreach,
     handleCopyOutreach, handleSendEmail, handleUpdateLeadInfo,
   } = useOutletContext<DashboardOutletContext>();
+
+  const [auditProgress, setAuditProgress] = useState(0);
+
+  const auditSteps = [
+    { threshold: 20, label: 'Fetching business details...' },
+    { threshold: 40, label: 'Analyzing website performance...' },
+    { threshold: 60, label: 'Identifying digital gaps...' },
+    { threshold: 80, label: 'Writing audit report...' },
+    { threshold: 100, label: 'Crafting personalized outreach...' },
+  ];
+  const auditStepIndex = (() => {
+    const i = auditSteps.findIndex(s => auditProgress <= s.threshold);
+    return i === -1 ? auditSteps.length - 1 : i;
+  })();
+
+  useEffect(() => {
+    if (!isAuditing) {
+      if (auditProgress > 0) {
+        setAuditProgress(100);
+        const t = setTimeout(() => setAuditProgress(0), 700);
+        return () => clearTimeout(t);
+      }
+      return;
+    }
+    setAuditProgress(0);
+    let current = 0;
+    const interval = setInterval(() => {
+      current = Math.min(current + Math.max(0.3, (95 - current) * 0.03), 95);
+      setAuditProgress(current);
+    }, 200);
+    return () => clearInterval(interval);
+  }, [isAuditing]);
 
   return (
     <motion.div
@@ -172,6 +205,26 @@ export default function LeadsTab() {
                         <Markdown>{selectedLead.audit_report}</Markdown>
                       </div>
                     </div>
+                  ) : isAuditing ? (
+                    <div className="py-16 px-12 bg-slate-50 rounded-3xl border border-dashed border-slate-200 flex flex-col items-center gap-6">
+                      <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center">
+                        <Sparkles size={28} className="text-indigo-500 animate-pulse" />
+                      </div>
+                      <div className="w-full max-w-sm space-y-3 text-center">
+                        <p className="text-sm font-bold text-slate-700">{auditSteps[auditStepIndex].label}</p>
+                        <div className="relative h-2 bg-slate-200 rounded-full overflow-hidden">
+                          <motion.div
+                            className="absolute inset-y-0 left-0 bg-indigo-600 rounded-full"
+                            style={{ width: `${auditProgress}%` }}
+                            transition={{ duration: 0.2, ease: 'easeOut' }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                          <span>Step {auditStepIndex + 1} of {auditSteps.length}</span>
+                          <span>{Math.round(auditProgress)}%</span>
+                        </div>
+                      </div>
+                    </div>
                   ) : (
                     <div className="text-center py-20 bg-slate-50 rounded-3xl border border-dashed border-slate-200">
                       <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center mx-auto mb-4 text-slate-300 shadow-sm">
@@ -181,10 +234,9 @@ export default function LeadsTab() {
                       <p className="text-sm text-slate-500 mt-1 mb-8">Analyze this business to see digital gaps and opportunities.</p>
                       <button
                         onClick={() => handleAudit(selectedLead)}
-                        disabled={isAuditing}
                         className="bg-indigo-600 text-white px-8 py-3.5 rounded-2xl text-sm font-bold shadow-xl shadow-indigo-600/20 flex items-center gap-2 mx-auto hover:bg-indigo-700 transition-all"
                       >
-                        {isAuditing ? <Loader2 className="animate-spin" size={20} /> : <Sparkles size={20} />}
+                        <Sparkles size={20} />
                         Generate Audit Report
                       </button>
                     </div>

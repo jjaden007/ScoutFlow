@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { useOutletContext } from 'react-router-dom';
 import {
@@ -13,20 +13,76 @@ export default function ProspectorTab() {
   const { handleSaveLead } = useOutletContext<DashboardOutletContext>();
 
   const [searchQuery, setSearchQuery] = useState({ category: '', location: '' });
-  const [searchResults, setSearchResults] = useState<Business[]>([]);
+  const [allResults, setAllResults] = useState<Business[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+
+  const RESULTS_PER_PAGE = 10;
+  const displayedResults = allResults.slice((currentPage - 1) * RESULTS_PER_PAGE, currentPage * RESULTS_PER_PAGE);
+  const totalFetchedPages = Math.ceil(allResults.length / RESULTS_PER_PAGE);
+  const maxPage = Math.min(totalFetchedPages + (fetchedPages.size > 0 ? 1 : 0), 5);
+
+  const discoverSteps = [
+    { threshold: 25, label: 'Scanning local business listings...' },
+    { threshold: 50, label: 'Analyzing digital presence...' },
+    { threshold: 75, label: 'Scoring lead quality...' },
+    { threshold: 100, label: 'Compiling your results...' },
+  ];
+  const currentDiscoverStep = discoverSteps.findIndex(s => progress <= s.threshold);
+  const discoverStepIndex = currentDiscoverStep === -1 ? discoverSteps.length - 1 : currentDiscoverStep;
+
+  useEffect(() => {
+    if (!loading) {
+      if (progress > 0) {
+        setProgress(100);
+        const t = setTimeout(() => setProgress(0), 700);
+        return () => clearTimeout(t);
+      }
+      return;
+    }
+    setProgress(0);
+    let current = 0;
+    const interval = setInterval(() => {
+      current = Math.min(current + Math.max(0.4, (95 - current) * 0.04), 95);
+      setProgress(current);
+    }, 200);
+    return () => clearInterval(interval);
+  }, [loading]);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.category || !searchQuery.location) return;
+    setAllResults([]);
+    setCurrentPage(1);
+    setFetchedPages(new Set());
     setLoading(true);
     try {
-      const results = await searchBusinesses(searchQuery.category, searchQuery.location);
-      setSearchResults(results);
+      const results = await searchBusinesses(searchQuery.category, searchQuery.location, 1);
+      setAllResults(results);
+      setFetchedPages(new Set([1]));
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePageChange = async (page: number) => {
+    if (page < 1 || page > maxPage || loading) return;
+    setCurrentPage(page);
+    if (!fetchedPages.has(page)) {
+      setLoading(true);
+      try {
+        const results = await searchBusinesses(searchQuery.category, searchQuery.location, page);
+        setAllResults(prev => [...prev, ...results]);
+        setFetchedPages(prev => new Set([...prev, page]));
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -84,7 +140,7 @@ export default function ProspectorTab() {
                 className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-8 py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed w-full md:w-auto shadow-lg shadow-indigo-600/20"
               >
                 {loading ? <Loader2 className="animate-spin" size={20} /> : <Search size={20} />}
-                Discover Leads
+                {loading ? `${Math.round(progress)}%` : 'Discover Leads'}
               </button>
             </div>
           </form>
@@ -108,7 +164,7 @@ export default function ProspectorTab() {
         <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
           <h3 className="font-bold text-slate-900">Discovery Results</h3>
           <div className="flex items-center gap-4 text-xs font-medium text-slate-500">
-            <span>Showing {searchResults.length} potential leads</span>
+            <span>Showing {allResults.length} potential leads</span>
             <div className="h-4 w-px bg-slate-200" />
             <div className="flex items-center gap-1 cursor-pointer hover:text-indigo-600">
               SORT BY: <span className="text-indigo-600 font-bold">Rating (High to Low)</span>
@@ -128,7 +184,7 @@ export default function ProspectorTab() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {searchResults.map(business => (
+              {displayedResults.map(business => (
                 <tr key={business.id} className="group hover:bg-indigo-50/30 transition-all duration-300">
                   <td className="px-8 py-6">
                     <div className="flex items-center gap-4">
@@ -177,7 +233,29 @@ export default function ProspectorTab() {
             </tbody>
           </table>
 
-          {searchResults.length === 0 && !loading && (
+          {loading && (
+            <div className="py-16 px-12 flex flex-col items-center gap-6">
+              <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center">
+                <Search size={28} className="text-indigo-500 animate-pulse" />
+              </div>
+              <div className="w-full max-w-md space-y-3 text-center">
+                <p className="text-sm font-bold text-slate-700">{discoverSteps[discoverStepIndex].label}</p>
+                <div className="relative h-2 bg-slate-100 rounded-full overflow-hidden">
+                  <motion.div
+                    className="absolute inset-y-0 left-0 bg-indigo-600 rounded-full"
+                    style={{ width: `${progress}%` }}
+                    transition={{ duration: 0.2, ease: 'easeOut' }}
+                  />
+                </div>
+                <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                  <span>Step {discoverStepIndex + 1} of {discoverSteps.length}</span>
+                  <span>{Math.round(progress)}%</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {allResults.length === 0 && !loading && (
             <div className="py-20 text-center">
               <div className="w-48 h-48 mx-auto mb-6 relative">
                 <img src="https://images.unsplash.com/photo-1584931423298-c576fda54bd2?auto=format&fit=crop&q=80&w=400" alt="No Results" className="w-full h-full object-cover rounded-3xl opacity-20 grayscale" referrerPolicy="no-referrer" />
@@ -191,15 +269,40 @@ export default function ProspectorTab() {
           )}
         </div>
 
-        <div className="p-4 border-t border-slate-100 flex justify-between items-center text-xs font-bold text-slate-400">
-          <button className="hover:text-indigo-600 transition-colors">Previous</button>
-          <div className="flex gap-2">
-            <button className="w-8 h-8 bg-indigo-600 text-white rounded-lg flex items-center justify-center">1</button>
-            <button className="w-8 h-8 hover:bg-slate-100 rounded-lg flex items-center justify-center">2</button>
-            <button className="w-8 h-8 hover:bg-slate-100 rounded-lg flex items-center justify-center">3</button>
+        {allResults.length > 0 && (
+          <div className="p-4 border-t border-slate-100 flex justify-between items-center text-xs font-bold text-slate-400">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1 || loading}
+              className="hover:text-indigo-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <div className="flex gap-2">
+              {Array.from({ length: maxPage }, (_, i) => i + 1).map(page => (
+                <button
+                  key={page}
+                  onClick={() => handlePageChange(page)}
+                  disabled={loading}
+                  className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all disabled:cursor-not-allowed ${
+                    page === currentPage
+                      ? 'bg-indigo-600 text-white shadow-md'
+                      : 'hover:bg-slate-100 text-slate-500'
+                  }`}
+                >
+                  {loading && page === currentPage ? <Loader2 size={14} className="animate-spin" /> : page}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === maxPage || loading}
+              className="hover:text-indigo-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
           </div>
-          <button className="hover:text-indigo-600 transition-colors">Next</button>
-        </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

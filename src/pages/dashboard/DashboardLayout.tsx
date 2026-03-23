@@ -133,7 +133,7 @@ export default function DashboardLayout() {
   const updateStatus = async (id: string, status: Lead['status']) => {
     try {
       await updateLead(id, { status });
-      fetchLeads();
+      setLeads(prev => prev.map(l => l.id === id ? { ...l, status } : l));
       setSelectedLead(prev => prev ? { ...prev, status } : null);
     } catch (err) { console.error(err); }
   };

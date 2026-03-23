@@ -115,10 +115,6 @@ export default function ProfileTab() {
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Full Name</label>
                 <input name="full_name" defaultValue={profile?.full_name} required className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 px-4 focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm" />
               </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Email Address</label>
-                <input name="email" type="email" defaultValue={profile?.email} required className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 px-4 focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm" />
-              </div>
             </div>
 
             <div className="space-y-8">

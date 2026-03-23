@@ -26,6 +26,17 @@ export default function LeadsTab() {
   } = useOutletContext<DashboardOutletContext>();
 
   const [auditProgress, setAuditProgress] = useState(0);
+  const [activeTab, setActiveTab] = useState<'history' | 'details'>('history');
+
+  function parseAuditScores(report: string) {
+    const match = report.match(/<!--SCORES:(\{[^}]+\})-->/);
+    if (!match) return { mobile: 0, speed: 0, design: 0, seo: 0 };
+    try { return JSON.parse(match[1]); } catch { return { mobile: 0, speed: 0, design: 0, seo: 0 }; }
+  }
+
+  function stripScoresComment(report: string) {
+    return report.replace(/<!--SCORES:\{[^}]+\}-->\n?/, '');
+  }
 
   const auditSteps = [
     { threshold: 20, label: 'Fetching business details...' },
@@ -84,6 +95,7 @@ export default function LeadsTab() {
               setSelectedLead(lead);
               setEditedOutreach(lead.outreach_message || '');
               setIsEditingOutreach(false);
+              setActiveTab('history');
             }}
             className={cn(
               'text-left p-5 rounded-2xl border transition-all duration-200',
@@ -195,15 +207,23 @@ export default function LeadsTab() {
                   </div>
                   {selectedLead.audit_report ? (
                     <div className="space-y-8">
-                      <div className="grid grid-cols-4 gap-6">
-                        <CircularGauge value={82} label="Mobile" sublabel="Responsiveness" />
-                        <CircularGauge value={40} label="Loading" sublabel="Performance Speed" />
-                        <CircularGauge value={65} label="Design" sublabel="Visual Quality" />
-                        <CircularGauge value={50} label="SEO" sublabel="Search Presence" />
-                      </div>
-                      <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm prose prose-slate prose-sm max-w-none">
-                        <Markdown>{selectedLead.audit_report}</Markdown>
-                      </div>
+                      {(() => {
+                        const scores = parseAuditScores(selectedLead.audit_report!);
+                        const cleanReport = stripScoresComment(selectedLead.audit_report!);
+                        return (
+                          <>
+                            <div className="grid grid-cols-4 gap-6">
+                              <CircularGauge value={scores.mobile} label="Mobile" sublabel="Responsiveness" />
+                              <CircularGauge value={scores.speed} label="Loading" sublabel="Performance Speed" />
+                              <CircularGauge value={scores.design} label="Design" sublabel="Visual Quality" />
+                              <CircularGauge value={scores.seo} label="SEO" sublabel="Search Presence" />
+                            </div>
+                            <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm prose prose-slate prose-sm max-w-none">
+                              <Markdown>{cleanReport}</Markdown>
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
                   ) : isAuditing ? (
                     <div className="py-16 px-12 bg-slate-50 rounded-3xl border border-dashed border-slate-200 flex flex-col items-center gap-6">
@@ -324,54 +344,75 @@ export default function LeadsTab() {
                 {/* Activity History */}
                 <div className="pt-8">
                   <div className="flex border-b border-slate-100">
-                    {['Action History', 'Lead Details'].map((tab, i) => (
-                      <button key={tab} className={cn('px-8 py-4 text-xs font-bold transition-all border-b-2', i === 0 ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-400 hover:text-slate-600')}>
-                        {tab}
+                    {(['history', 'details'] as const).map((tab, i) => (
+                      <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        className={cn('px-8 py-4 text-xs font-bold transition-all border-b-2', activeTab === tab ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-400 hover:text-slate-600')}
+                      >
+                        {i === 0 ? 'Action History' : 'Lead Details'}
                       </button>
                     ))}
                   </div>
-                  <div className="py-8 grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div className="space-y-6">
-                      <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Recent Activity</h4>
-                      <div className="space-y-6">
-                        <div className="flex gap-4">
-                          <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-500 shrink-0"><Phone size={20} /></div>
-                          <div>
-                            <div className="text-sm font-bold text-slate-900">Lead Discovered</div>
-                            <div className="text-xs text-slate-500 mt-0.5">Added to CRM via Prospector scan in {selectedLead.location}.</div>
-                            <div className="text-[10px] text-slate-400 font-bold uppercase mt-2">{new Date(selectedLead.created_at).toLocaleDateString()}</div>
-                          </div>
-                        </div>
-                        {selectedLead.audit_report && (
+                  <div className="py-8">
+                    {activeTab === 'history' ? (
+                      <div className="space-y-6 max-w-md">
+                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Recent Activity</h4>
+                        <div className="space-y-6">
                           <div className="flex gap-4">
-                            <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-500 shrink-0"><Sparkles size={20} /></div>
+                            <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-500 shrink-0"><Phone size={20} /></div>
                             <div>
-                              <div className="text-sm font-bold text-slate-900">Digital Audit Generated</div>
-                              <div className="text-xs text-slate-500 mt-0.5">AI analyzed website and identified key performance gaps.</div>
-                              <div className="text-[10px] text-slate-400 font-bold uppercase mt-2">Recently</div>
+                              <div className="text-sm font-bold text-slate-900">Lead Discovered</div>
+                              <div className="text-xs text-slate-500 mt-0.5">Added to CRM via Prospector scan in {selectedLead.location}.</div>
+                              <div className="text-[10px] text-slate-400 font-bold uppercase mt-2">{new Date(selectedLead.created_at).toLocaleDateString()}</div>
                             </div>
                           </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="space-y-6">
-                      <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Business Info</h4>
-                      <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 space-y-4">
-                        <div>
-                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Address</div>
-                          <div className="text-xs text-slate-700 font-medium">{selectedLead.address || 'Not available'}</div>
-                        </div>
-                        <div>
-                          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Website</div>
-                          <a href={selectedLead.website} target="_blank" rel="noreferrer" className="text-xs text-indigo-600 font-bold hover:underline">{selectedLead.website || 'No website'}</a>
-                        </div>
-                        <div className="flex gap-2 pt-2">
-                          {[Globe, Mail, Phone].map((Icon, i) => (
-                            <button key={i} className="w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-400 hover:text-indigo-600 transition-colors"><Icon size={18} /></button>
-                          ))}
+                          {selectedLead.audit_report && (
+                            <div className="flex gap-4">
+                              <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-500 shrink-0"><Sparkles size={20} /></div>
+                              <div>
+                                <div className="text-sm font-bold text-slate-900">Digital Audit Generated</div>
+                                <div className="text-xs text-slate-500 mt-0.5">AI analyzed website and identified key performance gaps.</div>
+                                <div className="text-[10px] text-slate-400 font-bold uppercase mt-2">Recently</div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="space-y-6 max-w-md">
+                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Business Info</h4>
+                        <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100 space-y-4">
+                          <div>
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Address</div>
+                            <div className="text-xs text-slate-700 font-medium">{selectedLead.address || 'Not available'}</div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Website</div>
+                            <a href={selectedLead.website} target="_blank" rel="noreferrer" className="text-xs text-indigo-600 font-bold hover:underline">{selectedLead.website || 'No website'}</a>
+                          </div>
+                          <div>
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Email</div>
+                            <div className="text-xs text-slate-700 font-medium">{selectedLead.email || 'Not available'}</div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Phone</div>
+                            <div className="text-xs text-slate-700 font-medium">{selectedLead.phone || 'Not available'}</div>
+                          </div>
+                          <div className="flex gap-2 pt-2">
+                            {selectedLead.website && (
+                              <a href={selectedLead.website} target="_blank" rel="noreferrer" className="w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-400 hover:text-indigo-600 transition-colors"><Globe size={18} /></a>
+                            )}
+                            {selectedLead.email && (
+                              <a href={`mailto:${selectedLead.email}`} className="w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-400 hover:text-indigo-600 transition-colors"><Mail size={18} /></a>
+                            )}
+                            {selectedLead.phone && (
+                              <a href={`tel:${selectedLead.phone}`} className="w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-slate-400 hover:text-indigo-600 transition-colors"><Phone size={18} /></a>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

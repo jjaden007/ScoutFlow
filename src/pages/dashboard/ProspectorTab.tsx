@@ -1,18 +1,56 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'motion/react';
 import { useOutletContext } from 'react-router-dom';
 import {
   Search, MapPin, Briefcase, Loader2, ChevronRight,
-  Globe, Clock, CheckCircle2, TrendingUp,
 } from 'lucide-react';
+import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import { searchBusinesses } from '../../services/api';
 import type { Business } from '../../types';
 import type { DashboardOutletContext } from './DashboardLayout';
+
+function MapFlyTo({ location }: { location: string }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!location.trim()) return;
+    fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(location)}&format=json&limit=1`)
+      .then(r => r.json())
+      .then(data => {
+        if (data[0]) map.flyTo([parseFloat(data[0].lat), parseFloat(data[0].lon)], 12, { duration: 1.2 });
+      })
+      .catch(() => {});
+  }, [location, map]);
+  return null;
+}
+
+const LOCATION_SUGGESTIONS = [
+  'New York, NY', 'Los Angeles, CA', 'Chicago, IL', 'Houston, TX', 'Phoenix, AZ',
+  'Philadelphia, PA', 'San Antonio, TX', 'San Diego, CA', 'Dallas, TX', 'Austin, TX',
+  'Jacksonville, FL', 'Fort Worth, TX', 'Columbus, OH', 'Charlotte, NC', 'Indianapolis, IN',
+  'San Francisco, CA', 'Seattle, WA', 'Denver, CO', 'Nashville, TN', 'Oklahoma City, OK',
+  'Miami, FL', 'Atlanta, GA', 'Las Vegas, NV', 'Portland, OR', 'Memphis, TN',
+  'Boston, MA', 'Baltimore, MD', 'Louisville, KY', 'Milwaukee, WI', 'Albuquerque, NM',
+  'Tucson, AZ', 'Fresno, CA', 'Sacramento, CA', 'Mesa, AZ', 'Kansas City, MO',
+  'Omaha, NE', 'Raleigh, NC', 'Cleveland, OH', 'Minneapolis, MN', 'Tampa, FL',
+];
+
+const CATEGORY_SUGGESTIONS = [
+  'Dentists', 'Restaurants', 'Plumbers', 'Electricians', 'Lawyers',
+  'Auto Repair Shops', 'Hair Salons', 'Gyms', 'Chiropractors', 'Real Estate Agents',
+  'Accountants', 'Landscapers', 'HVAC Companies', 'Photographers', 'Roofers',
+  'Pest Control', 'Dog Groomers', 'Veterinarians', 'Florists', 'Painters',
+  'Interior Designers', 'Personal Trainers', 'Massage Therapists', 'Optometrists', 'Pediatricians',
+  'Bakeries', 'Coffee Shops', 'Tattoo Shops', 'Cleaning Services', 'Moving Companies',
+];
 
 export default function ProspectorTab() {
   const { handleSaveLead } = useOutletContext<DashboardOutletContext>();
 
   const [searchQuery, setSearchQuery] = useState({ category: '', location: '' });
+  const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
+  const [categorySuggestions, setCategorySuggestions] = useState<string[]>([]);
+  const locationRef = useRef<HTMLDivElement>(null);
+  const categoryRef = useRef<HTMLDivElement>(null);
   const [allResults, setAllResults] = useState<Business[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [fetchedPages, setFetchedPages] = useState<Set<number>>(new Set());
@@ -32,6 +70,15 @@ export default function ProspectorTab() {
   ];
   const currentDiscoverStep = discoverSteps.findIndex(s => progress <= s.threshold);
   const discoverStepIndex = currentDiscoverStep === -1 ? discoverSteps.length - 1 : currentDiscoverStep;
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (locationRef.current && !locationRef.current.contains(e.target as Node)) setLocationSuggestions([]);
+      if (categoryRef.current && !categoryRef.current.contains(e.target as Node)) setCategorySuggestions([]);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     if (!loading) {
@@ -110,28 +157,80 @@ export default function ProspectorTab() {
           <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Location</label>
-              <div className="relative">
+              <div className="relative" ref={locationRef}>
                 <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                 <input
                   type="text"
                   placeholder="e.g. Austin, TX"
                   className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-indigo-500 transition-all outline-none text-sm"
                   value={searchQuery.location}
-                  onChange={e => setSearchQuery({ ...searchQuery, location: e.target.value })}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setSearchQuery({ ...searchQuery, location: val });
+                    setLocationSuggestions(
+                      val.trim().length > 0
+                        ? LOCATION_SUGGESTIONS.filter(s => s.toLowerCase().includes(val.toLowerCase())).slice(0, 6)
+                        : []
+                    );
+                  }}
+                  onFocus={() => {
+                    if (searchQuery.location.trim().length > 0)
+                      setLocationSuggestions(LOCATION_SUGGESTIONS.filter(s => s.toLowerCase().includes(searchQuery.location.toLowerCase())).slice(0, 6));
+                  }}
                 />
+                {locationSuggestions.length > 0 && (
+                  <ul className="absolute z-20 top-full mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
+                    {locationSuggestions.map(s => (
+                      <li
+                        key={s}
+                        onMouseDown={() => { setSearchQuery({ ...searchQuery, location: s }); setLocationSuggestions([]); }}
+                        className="px-4 py-2.5 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 cursor-pointer flex items-center gap-2"
+                      >
+                        <MapPin size={14} className="text-slate-400 shrink-0" />
+                        {s}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Category</label>
-              <div className="relative">
+              <div className="relative" ref={categoryRef}>
                 <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                 <input
                   type="text"
                   placeholder="e.g. Dentists"
                   className="w-full bg-slate-50 border border-slate-100 rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-indigo-500 transition-all outline-none text-sm"
                   value={searchQuery.category}
-                  onChange={e => setSearchQuery({ ...searchQuery, category: e.target.value })}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setSearchQuery({ ...searchQuery, category: val });
+                    setCategorySuggestions(
+                      val.trim().length > 0
+                        ? CATEGORY_SUGGESTIONS.filter(s => s.toLowerCase().includes(val.toLowerCase())).slice(0, 6)
+                        : []
+                    );
+                  }}
+                  onFocus={() => {
+                    if (searchQuery.category.trim().length > 0)
+                      setCategorySuggestions(CATEGORY_SUGGESTIONS.filter(s => s.toLowerCase().includes(searchQuery.category.toLowerCase())).slice(0, 6));
+                  }}
                 />
+                {categorySuggestions.length > 0 && (
+                  <ul className="absolute z-20 top-full mt-1 w-full bg-white border border-slate-200 rounded-xl shadow-lg overflow-hidden">
+                    {categorySuggestions.map(s => (
+                      <li
+                        key={s}
+                        onMouseDown={() => { setSearchQuery({ ...searchQuery, category: s }); setCategorySuggestions([]); }}
+                        className="px-4 py-2.5 text-sm text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 cursor-pointer flex items-center gap-2"
+                      >
+                        <Briefcase size={14} className="text-slate-400 shrink-0" />
+                        {s}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
             <div className="md:col-span-2">
@@ -146,17 +245,17 @@ export default function ProspectorTab() {
           </form>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm relative group">
-          <img src="https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?auto=format&fit=crop&q=80&w=800" alt="Map Preview" className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-all duration-700" referrerPolicy="no-referrer" />
-          <div className="absolute inset-0 bg-indigo-900/10" />
-          <div className="absolute top-4 right-4 flex flex-col gap-2">
-            <button className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-md text-slate-600 hover:text-indigo-600 transition-colors">+</button>
-            <button className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-md text-slate-600 hover:text-indigo-600 transition-colors">-</button>
-          </div>
-          <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur px-3 py-1.5 rounded-full text-[10px] font-bold text-slate-700 shadow-lg border border-white/20 flex items-center gap-2">
-            <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />
-            {searchQuery.location || 'Austin, TX'} (Live Map)
-          </div>
+        <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm" style={{ minHeight: '220px' }}>
+          <MapContainer
+            center={[30.2672, -97.7431]}
+            zoom={11}
+            zoomControl={false}
+            style={{ width: '100%', height: '100%', minHeight: '220px' }}
+            attributionControl={false}
+          >
+            <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
+            <MapFlyTo location={searchQuery.location} />
+          </MapContainer>
         </div>
       </div>
 
@@ -305,24 +404,6 @@ export default function ProspectorTab() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[
-          { icon: Globe, label: 'Missing Websites', value: 12, bg: 'bg-red-50', color: 'text-red-500' },
-          { icon: Clock, label: 'Slow Speeds', value: 28, bg: 'bg-amber-50', color: 'text-amber-500' },
-          { icon: CheckCircle2, label: 'Ready to Contact', value: 15, bg: 'bg-indigo-50', color: 'text-indigo-500' },
-          { icon: TrendingUp, label: 'Avg. Score Gap', value: '64%', bg: 'bg-emerald-50', color: 'text-emerald-500' },
-        ].map(({ icon: Icon, label, value, bg, color }) => (
-          <div key={label} className="bg-white border border-slate-200 p-6 rounded-3xl shadow-sm flex items-center gap-4">
-            <div className={`w-12 h-12 ${bg} rounded-2xl flex items-center justify-center ${color}`}>
-              <Icon size={24} />
-            </div>
-            <div>
-              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{label}</div>
-              <div className="text-3xl font-bold text-slate-900">{value}</div>
-            </div>
-          </div>
-        ))}
-      </div>
     </motion.div>
   );
 }

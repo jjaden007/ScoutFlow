@@ -21,17 +21,13 @@ export default function OverviewTab() {
           <h1 className="text-4xl font-bold text-slate-900 tracking-tight mb-2">Dashboard</h1>
           <p className="text-slate-500 font-medium">Welcome back, <span className="text-indigo-600 font-bold">{profile?.full_name || 'User'}</span>. Here's your agency performance.</p>
         </div>
-        <div className="flex gap-3">
-          <button className="bg-white border border-slate-200 px-4 py-2 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-50 transition-all shadow-sm">Export Report</button>
-          <button className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 transition-all">New Campaign</button>
-        </div>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard label="Total Leads" value={leads.length} icon={Users} color="bg-blue-500" trend="+12% from last month" />
-        <StatCard label="New Opportunities" value={leads.filter(l => l.status === 'new').length} icon={AlertCircle} color="bg-amber-500" trend="5 new today" />
-        <StatCard label="Contacted" value={leads.filter(l => l.status === 'contacted').length} icon={Clock} color="bg-indigo-500" trend="+8% conversion" />
-        <StatCard label="Closed Deals" value={leads.filter(l => l.status === 'closed').length} icon={CheckCircle2} color="bg-emerald-500" trend="+24% revenue" />
+        <StatCard label="Total Leads" value={leads.length} icon={Users} color="bg-blue-500" />
+        <StatCard label="New Opportunities" value={leads.filter(l => l.status === 'new').length} icon={AlertCircle} color="bg-amber-500" />
+        <StatCard label="Contacted" value={leads.filter(l => l.status === 'contacted').length} icon={Clock} color="bg-indigo-500" />
+        <StatCard label="Closed Deals" value={leads.filter(l => l.status === 'closed').length} icon={CheckCircle2} color="bg-emerald-500" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

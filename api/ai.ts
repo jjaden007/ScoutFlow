@@ -75,8 +75,18 @@ name (string), website (string or null — must be a real verified URL), email (
       const { business } = body as any;
       if (!business) return res.status(400).json({ error: 'business required' });
       const prompt = business.website
-        ? `Perform a digital audit for "${business.name}" (${business.website}). Analyze mobile responsiveness, speed, SEO, and online presence. Return a concise Markdown report with bullet points.`
-        : `"${business.name}" has NO website. Explain why this hurts a ${business.category} in ${business.location} and what they're missing. Return a concise Markdown report.`;
+        ? `Perform a digital audit for "${business.name}" (${business.website}).
+
+First line MUST be exactly this format with your real estimated scores (0-100):
+<!--SCORES:{"mobile":<score>,"speed":<score>,"design":<score>,"seo":<score>}-->
+
+Then write a concise Markdown audit report with bullet points covering mobile responsiveness, page speed, design quality, SEO, and online presence.`
+        : `"${business.name}" has NO website.
+
+First line MUST be exactly this format with scores reflecting how bad this is (0-100):
+<!--SCORES:{"mobile":5,"speed":0,"design":5,"seo":5}-->
+
+Then explain in Markdown why having no website hurts a ${business.category} in ${business.location} and what they're missing.`;
       const report = await gemini(prompt);
       return res.json({ report });
     }
